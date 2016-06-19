@@ -1,0 +1,7 @@
+name = bv membership
+description = memeber subscriptions
+core = 7.x
+
+dependencies[] = commerce_vip_points
+
+files[] = bv_membership.apply.inc
