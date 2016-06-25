@@ -1,1 +1,20 @@
 <?php
+/**
+ * Implements hook_menu().
+ */
+function bv_membership_menu(){
+    $items = array();
+
+    $items['user/%user/apply'] = array(
+        'title' => t('会员申请'),
+        'description' => t('会员申请'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('bv_membership_member_apply_page'),
+        'file' =>  'bv_membership.apply.inc',
+        'access callback' => 'user_is_logged_in',
+        'type' => MENU_LOCAL_TASK,
+    );
+
+    return $items;
+
+}

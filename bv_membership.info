@@ -1,5 +1,5 @@
 name = bv membership
-description = memeber subscriptions
+description = member subscription with Alipay Global payment
 core = 7.x
 
 dependencies[] = commerce_vip_points
