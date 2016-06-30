@@ -22,6 +22,7 @@ required:必选项
 			prov:null,
 			city:null,
 			dist:null,
+			town:null,
 			nodata:null,
 			required:true
 		},settings);
@@ -30,7 +31,6 @@ required:必选项
 		var prov_obj=box_obj.find(".prov");
 		var city_obj=box_obj.find(".city");
 		var dist_obj=box_obj.find(".dist");
-		var town_obj=box_obj.find(".town");
 		var town_obj=box_obj.find(".town");
 		var prov_val=settings.prov;
 		var city_val=settings.city;
@@ -166,7 +166,7 @@ required:必选项
 				distStart();
 				setlocationValue();
 			});
-			
+
 			dist_obj.bind("change",function(){
 				townStart();
 				setlocationValue();
@@ -190,20 +190,23 @@ required:必选项
 	};
 
 	var setlocationValue = function(){
-		$('.provh').val($('.prov').val());
-		$('.cityh').val($('.city').val());
-		$('.disth').val($('.dist').val());
-		$('.townh').val($('.town').val());
+		$('#edit-field-prev-und-0-value').val($('.prov').val());
+		$('#edit-field-user-city-und-0-value').val($('.city').val());
+		$('#edit-field-user-dist-und-0-value').val($('.dist').val());
+		$('#edit-field-user-town-und-0-value').val($('.town').val());
 	};
 
 	Drupal.behaviors.cityselectbehavior = {
 		attach: function (context, settings) {
-			$('.page-user-apply .city-select', context).once('ianshl', function () {
+			$('.city-select', context).once('ianshl', function () {
 				$(this).citySelect({
 					url:$('.baseurlh').val(),
-					nodata:"none" //当子集无数据时，隐藏select
+					nodata:"none" ,//当子集无数据时，隐藏select
+					prov:$('#edit-field-prev-und-0-value').val(),
+					city:$('#edit-field-user-city-und-0-value').val(),
+					dist:$('#edit-field-user-dist-und-0-value').val(),
+					town:$('#edit-field-user-town-und-0-value').val(),
 				});
-				setlocationValue();
 			});
 
 		}

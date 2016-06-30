@@ -16,5 +16,65 @@ function bv_membership_menu(){
     );
 
     return $items;
-
 }
+
+
+/**
+ * hid some fileds on user profile page
+ * @param $form
+ * @param $form_state
+ * @param $form_id
+ */
+function bv_membership_form_alter(&$form, &$form_state, $form_id) {
+    global $user;
+
+    if ($form_id === 'user_profile_form') {
+
+        if(!in_array('administrator', $user->roles) && !in_array('管理员', $user->roles)){
+            hide($form['field_parent_user']);
+            hide($form ['field_parent_user_phone']);
+            hide($form ['picture']);
+            hide($form ['timezone']);
+            hide($form ['locale']);
+            hide($form['field_prev']);
+            hide($form['field_user_city']);
+            hide($form['field_user_dist']);
+            hide($form['field_user_town']);
+        }else{
+            _bv_member_set_city_select($form);
+        }
+    }
+
+    if( $form_id === 'user_register_form'){
+
+        if(!in_array('administrator', $user->roles) && !in_array('管理员', $user->roles)) {
+            hide($form['field_prev']);
+            hide($form['field_user_city']);
+            hide($form['field_user_dist']);
+            hide($form['field_user_town']);
+        }else{
+            _bv_member_set_city_select($form);
+        }
+    }
+}
+
+function _bv_member_set_city_select(&$form){
+    global $base_url;
+
+    $form['#attached']['js'] = array(
+        drupal_get_path('module', 'bv_membership') . '/js/cityselect.js',
+    );
+
+    $form['#attached']['css'] = array(
+        drupal_get_path('module', 'bv_membership') . '/css/bv_memeber.css',
+    );
+
+    $form['baseurlh'] = array('#type' => 'hidden',
+        '#value' =>$base_url . '/' . drupal_get_path('module', 'bv_membership') . '/js/city.min.js',
+        '#attributes' => array('class' => array('baseurlh')));
+
+    $form['city']= array( '#markup' => '<div class="city-select"><label class="control-label">所属地址</label><select class="form-select prov"></select>'
+        . '<select class="form-select city" disabled="disabled"></select><select class="form-select dist" disabled="disabled"></select><select class="form-select town" disabled="disabled"></select></div><div class="clear"></div>',
+        '#weight' => 2);
+}
+

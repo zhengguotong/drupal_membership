@@ -1,0 +1,26 @@
+#edit-field-prev,
+#edit-field-user-city,
+#edit-field-user-dist,
+#edit-field-user-town{
+    display: none;
+}
+
+.city-select label{
+    font-family: "Open Sans", "Segoe UI", "Helvetica", sans-serif;
+    font-size: 20px;
+    font-weight: 300;
+    margin: 0;
+    margin: 0px 0px 4px;
+    line-height: 1.4;
+    width: initial;
+}
+
+.city-select .form-select{
+    float:left;
+    width: 23%;
+}
+
+div.clear{
+    clear:both;
+}
+
