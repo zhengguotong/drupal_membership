@@ -9,11 +9,6 @@ function bv_membership_member_apply_page($form, &$form_state){
         drupal_get_path('module', 'bv_membership') . '/js/jquery.cityselect.js',
     );
 
-    $form['member'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('申请会员'),
-    );
-
     $form['member']['bank_name'] = array(
         '#type' => 'textfield',
         '#title' => t('银行名称'),
@@ -62,9 +57,22 @@ function bv_membership_member_apply_page($form, &$form_state){
                                         '#value' =>$base_url . '/' . drupal_get_path('module', 'bv_membership') . '/js/city.min.js',
                                         '#attributes' => array('class' => array('baseurlh')));
 
+    //payment part
+    $form['member']['payment'] = array( '#type' => 'fieldset',
+                                         '#title' => t('会员费'),);
+
+    $form['member']['payment']['payment_method'] = array(  '#type' => 'radios',
+        '#title' => t('获取会员资格需要缴纳$' .variable_get('commerce_vip_points_member_fee','40.00') .'会员费'),
+        '#options' => array(
+            t('支付宝支付'),
+        ),
+        '#default_value' =>  t('支付宝支付'),
+        );
+    //end payment part
+    
     $form['member']['submit'] = array(
         '#type' => 'submit',
-        '#value' => t('submit'),
+        '#value' => t('提交申请和付款'),
          '#submit' => array(
             'bv_membership_member_apply_form_submit'
         )
@@ -156,7 +164,12 @@ function bv_membership_member_apply_form_submit($form, &$formstate){
     }
     
     user_save($current_user);
+
+    $payment_url = bv_membership_alipay_payment($current_user);
+    $form_state['redirect'] = $payment_url;
+    drupal_goto($payment_url);
 }
+
 
 /**
  * Make sure parent phone number is in correct format

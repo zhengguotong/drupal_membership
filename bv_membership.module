@@ -15,6 +15,20 @@ function bv_membership_menu(){
         'type' => MENU_LOCAL_TASK,
     );
 
+    $items['user/apply/return'] = array(
+        'title' => t('会员申请结果'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('bv_memeber_apply_return'),
+        'access callback' => 'user_is_logged_in',
+        'type' => MENU_NORMAL_ITEM,
+    );
+
+    $items['user/notification/notify'] = array(
+        'page callback' => 'bv_membership_process_notify',
+        'access callback' => TRUE,
+        'type' => MENU_CALLBACK,
+    );
+
     return $items;
 }
 
@@ -76,5 +90,96 @@ function _bv_member_set_city_select(&$form){
     $form['city']= array( '#markup' => '<div class="city-select"><label class="control-label">所属地址</label><select class="form-select prov"></select>'
         . '<select class="form-select city" disabled="disabled"></select><select class="form-select dist" disabled="disabled"></select><select class="form-select town" disabled="disabled"></select></div><div class="clear"></div>',
         '#weight' => 2);
+}
+
+
+function bv_membership_alipay_payment($current_user){
+    // URL for directing incoming payment transaction requests.
+    $url = 'https://mapi.alipay.com/gateway.do?';
+
+    $payment_method = commerce_payment_method_instance_load('alipay_global|commerce_payment_alipay_global');
+
+    if (empty($payment_method['settings']['partner'])) {
+        return array();
+    }
+
+    // Set feedback URLs.
+    $settings = array(
+        // Return to the payment redirect page for processing successful payments.
+        'return' => url('user/apply/return', array('absolute' => TRUE)),
+        'notify' => url('user/apply/notify', array('absolute' => TRUE)),
+    );
+    $settings = $payment_method['settings'] + $settings;
+
+    $amount = $payment_method['settings']['debug'] ? 0.01 : variable_get('commerce_vip_points_member_fee','40.00');
+
+    // Declare the data to be provided through Alipay's API to process payment.
+    $data = array(
+        'service' => $settings['service'],
+        'payment_type' => '1',
+        'partner' => $settings['partner'],
+        'seller_email' => $settings['seller_email'],
+        'return_url' => $settings['return'],
+        'notify_url' => $settings['notify'],
+        '_input_charset' => 'UTF-8',
+        'show_url' => $settings['return'],
+        'out_trade_no' =>  $current_user->uid,
+        'subject' => t('伊恩国际会员费-用户 !user_name', array('!user_name' => $current_user->name)),
+        'body' => t('!user_name 会员费', array('!user_name' => $current_user->name)),
+        'total_fee' =>round($amount,2),
+        'currency' => 'AUD',
+        'sign_type' => 'MD5',
+    );
+    // Encrypted transaction signature.
+    $data['sign'] = commerce_alipay_global_sign($settings['key'], $data);
+
+    return $url . drupal_http_build_query($data);
+}
+
+/**
+ * Menu callback function to process Alipay's feedback notifications.
+ */
+function bv_membership_process_notify() {
+    if (empty($_POST)) {
+        return FALSE;
+    }
+    $_POST['out_trade_no'];
+    ddl($_POST);
+//    $order = commerce_order_load($_POST['out_trade_no']);
+//    $payment_method = commerce_payment_method_instance_load($order->data['payment_method']);
+//    // Validate the received notification from Alipay.
+//    if (commerce_alipay_global_notify_validate($order, $payment_method, $_POST)) {
+//        commerce_alipay_global_notify_submit($order, $payment_method, $_POST);
+//    }
+}
+
+/**
+ * Validation of Alipay's notifications.
+ */
+function bv_membership_notify_validate($order, $payment_method, $notify) {
+    if (empty($notify)) {
+        return FALSE;
+    }
+    ddl($notify);
+    // Log an entry of the notification received for a transaction.
+    watchdog('commerce_alipay_global', 'Customer returned from Alipay with the following data:<pre>@notify</pre>', array('@notify' => print_r($notify, TRUE)));
+//    $notify = drupal_get_query_parameters($notify);
+//    // Encrypted transaction signature.
+//    $sign = commerce_alipay_global_sign($payment_method['settings']['key'], $notify);
+//    // Verification is done by querying the following Alipay API URL.
+//    $verify_url = extension_loaded('openssl') ? 'https://mapi.alipay.com/gateway.do?service=notify_verify&' : 'http://notify.alipay.com/trade/notify_query.do?';
+//    $result = drupal_http_request($verify_url . 'partner=' . $payment_method['settings']['partner'] . '&notify_id=' . $notify["notify_id"]);
+//    if ($result->data == 'true' && $sign == $notify['sign']) {
+//        return TRUE;
+//    }
+//    commerce_payment_redirect_pane_previous_page($order);
+//    return FALSE;
+}
+
+
+function bv_memeber_apply_return($form, &$form_state){
+    drupal_set_message(t('你的会员申请我们已经收到，请在<a href="/user">会员专区</a>查看你的申请状态，和会员到期日期.'));
+    ddl($_POST);
+    return $form;
 }
 

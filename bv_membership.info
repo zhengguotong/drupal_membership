@@ -5,3 +5,4 @@ core = 7.x
 dependencies[] = commerce_vip_points
 
 files[] = bv_membership.apply.inc
+files[] = bv_membership.payment.inc
