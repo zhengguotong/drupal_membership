@@ -54,6 +54,8 @@ function bv_membership_form_alter(&$form, &$form_state, $form_id) {
             hide($form['field_user_city']);
             hide($form['field_user_dist']);
             hide($form['field_user_town']);
+            hide($form['field_vip_apply_date']);
+            hide($form['field_vip_expired_date']);
         }else{
             _bv_member_set_city_select($form);
         }
@@ -183,7 +185,18 @@ function bv_membership_notify_submit($notify){
 
         $user->roles[5] = '5';//auto assign 会员role
         $user->field_vip_apply_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('now'));
-        $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year'));
+        if(empty( $user->field_vip_expired_date)){
+            $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year'));
+        }else{
+            $today = date("Y-m-d H:i:s");
+            $current_expired_date = $user->field_vip_expired_date['und']['0']['value'];
+            if($current_expired_date <= $today){
+                $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year'));
+            }
+            else{
+                $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year',strtotime($current_expired_date)));
+            }
+        }
         user_save($user);
 
         db_insert('bv_memebership_transaction')
@@ -230,7 +243,3 @@ function bv_membership_return_validate($notify) {
 
     return FALSE;
 }
-
-
-
-

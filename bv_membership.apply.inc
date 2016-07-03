@@ -1,61 +1,63 @@
 <?php
 
 function bv_membership_member_apply_page($form, &$form_state){
-    global $base_url;
+    global $base_url,$user;;
 
     $form = array();
 
-    $form['#attached']['js'] = array(
-        drupal_get_path('module', 'bv_membership') . '/js/jquery.cityselect.js',
-    );
+    if(!in_array('会员', $user->roles) ){//first apply membership 
+        $form['#attached']['js'] = array(
+            drupal_get_path('module', 'bv_membership') . '/js/jquery.cityselect.js',
+        );
 
-    $form['member']['bank_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('银行名称'),
-        '#size' => 60,
-        '#required' => TRUE,
-        '#maxlength' => 128,
-    );
+        $form['member']['bank_name'] = array(
+            '#type' => 'textfield',
+            '#title' => t('银行名称'),
+            '#size' => 60,
+            '#required' => TRUE,
+            '#maxlength' => 128,
+        );
 
-    $form['member']['bank_account'] = array(
-        '#type' => 'textfield',
-        '#title' => t('银行账号'),
-         '#size' => 60,
-        '#required' => TRUE,
-        '#maxlength' => 128,
-    );
+        $form['member']['bank_account'] = array(
+            '#type' => 'textfield',
+            '#title' => t('银行账号'),
+            '#size' => 60,
+            '#required' => TRUE,
+            '#maxlength' => 128,
+        );
 
-    $form['member']['parent_phone'] = array(
-        '#type' => 'textfield',
-        '#title' => t('推荐人手机号码'),
-        '#description' => t('若无推荐，请输入你的地址，我们会根据你的地址选择默认推荐人。'),
-        '#size' => 60,
-        '#maxlength' => 128,
-        '#element_validate' => array('_bv_membership_china_phone_validation'),
-    );
+        $form['member']['parent_phone'] = array(
+            '#type' => 'textfield',
+            '#title' => t('推荐人手机号码'),
+            '#description' => t('若无推荐，请输入你的地址，我们会根据你的地址选择默认推荐人。'),
+            '#size' => 60,
+            '#maxlength' => 128,
+            '#element_validate' => array('_bv_membership_china_phone_validation'),
+        );
 
-    $form['member']['city']= array( '#markup' => '<div class="city-select"><label class="control-label">数属地址</label><select class="form-control prov"></select>'
-        . '<select class="form-control city" disabled="disabled"></select><select class="form-control dist" disabled="disabled"></select><select class="form-control town" disabled="disabled"></select></div>' );
+        $form['member']['city']= array( '#markup' => '<div class="city-select"><label class="control-label">数属地址</label><select class="form-control prov"></select>'
+            . '<select class="form-control city" disabled="disabled"></select><select class="form-control dist" disabled="disabled"></select><select class="form-control town" disabled="disabled"></select></div>' );
 
-    $form['member']['provh'] = array('#type' => 'hidden',
-                                    '#default_value' => '' ,
-                                    '#attributes' => array('class' => array('provh')));
+        $form['member']['provh'] = array('#type' => 'hidden',
+            '#default_value' => '' ,
+            '#attributes' => array('class' => array('provh')));
 
-    $form['member']['cityh'] = array('#type' => 'hidden',
-                                    '#default_value' => '',
-                                    '#attributes' => array('class' => array('cityh')));
+        $form['member']['cityh'] = array('#type' => 'hidden',
+            '#default_value' => '',
+            '#attributes' => array('class' => array('cityh')));
 
-    $form['member']['disth'] = array('#type' => 'hidden',
-                                    '#default_value' => '',
-                                    '#attributes' => array('class' => array('disth')));
+        $form['member']['disth'] = array('#type' => 'hidden',
+            '#default_value' => '',
+            '#attributes' => array('class' => array('disth')));
 
-    $form['member']['townh'] = array('#type' => 'hidden',
-        '#default_value' => '',
-        '#attributes' => array('class' => array('townh')));
+        $form['member']['townh'] = array('#type' => 'hidden',
+            '#default_value' => '',
+            '#attributes' => array('class' => array('townh')));
 
-    $form['member']['baseurlh'] = array('#type' => 'hidden',
-                                        '#value' =>$base_url . '/' . drupal_get_path('module', 'bv_membership') . '/js/city.min.js',
-                                        '#attributes' => array('class' => array('baseurlh')));
+        $form['member']['baseurlh'] = array('#type' => 'hidden',
+            '#value' =>$base_url . '/' . drupal_get_path('module', 'bv_membership') . '/js/city.min.js',
+            '#attributes' => array('class' => array('baseurlh')));
+    }
 
     //payment part
     $form['member']['payment'] = array( '#type' => 'fieldset',
@@ -110,7 +112,7 @@ function bv_membership_member_apply_form_submit($form, &$formstate){
     if(!empty($formstate['values']['townh'])) {
          $current_user->field_user_town['und'][0]['value'] = $formstate['values']['townh'];
     }
-    
+
     //如果推荐人手机号码有填写，查找是否有对应的用户
     if(!empty($formstate['values']['parent_phone'])){
         $current_user->field_parent_user_phone['und'][0]['value'] = $formstate['values']['parent_phone'];
