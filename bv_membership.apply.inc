@@ -82,7 +82,6 @@ function bv_membership_member_apply_page($form, &$form_state){
 }
 
 function bv_membership_member_apply_form_submit($form, &$formstate){
-//    $edit['roles'][5] = '5';//auto assign 会员role
     global $user;
     $hasParentUser = false;
     $current_user = user_load($user->uid);
@@ -111,8 +110,7 @@ function bv_membership_member_apply_form_submit($form, &$formstate){
     if(!empty($formstate['values']['townh'])) {
          $current_user->field_user_town['und'][0]['value'] = $formstate['values']['townh'];
     }
-
-
+    
     //如果推荐人手机号码有填写，查找是否有对应的用户
     if(!empty($formstate['values']['parent_phone'])){
         $current_user->field_parent_user_phone['und'][0]['value'] = $formstate['values']['parent_phone'];

@@ -18,12 +18,12 @@ function bv_membership_menu(){
     $items['user/apply/return'] = array(
         'title' => t('会员申请结果'),
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('bv_memeber_apply_return'),
+        'page arguments' => array('bv_membership_apply_return'),
         'access callback' => 'user_is_logged_in',
         'type' => MENU_NORMAL_ITEM,
     );
 
-    $items['user/notification/notify'] = array(
+    $items['user/apply/notify'] = array(
         'page callback' => 'bv_membership_process_notify',
         'access callback' => TRUE,
         'type' => MENU_CALLBACK,
@@ -143,43 +143,94 @@ function bv_membership_process_notify() {
     if (empty($_POST)) {
         return FALSE;
     }
-    $_POST['out_trade_no'];
-    ddl($_POST);
-//    $order = commerce_order_load($_POST['out_trade_no']);
-//    $payment_method = commerce_payment_method_instance_load($order->data['payment_method']);
-//    // Validate the received notification from Alipay.
-//    if (commerce_alipay_global_notify_validate($order, $payment_method, $_POST)) {
-//        commerce_alipay_global_notify_submit($order, $payment_method, $_POST);
-//    }
+    if (bv_membership_notify_validate($_POST)){
+        bv_membership_notify_submit($_POST);
+    }
 }
 
 /**
  * Validation of Alipay's notifications.
  */
-function bv_membership_notify_validate($order, $payment_method, $notify) {
+function bv_membership_notify_validate($notify) {
     if (empty($notify)) {
         return FALSE;
     }
-    ddl($notify);
     // Log an entry of the notification received for a transaction.
-    watchdog('commerce_alipay_global', 'Customer returned from Alipay with the following data:<pre>@notify</pre>', array('@notify' => print_r($notify, TRUE)));
-//    $notify = drupal_get_query_parameters($notify);
-//    // Encrypted transaction signature.
-//    $sign = commerce_alipay_global_sign($payment_method['settings']['key'], $notify);
-//    // Verification is done by querying the following Alipay API URL.
-//    $verify_url = extension_loaded('openssl') ? 'https://mapi.alipay.com/gateway.do?service=notify_verify&' : 'http://notify.alipay.com/trade/notify_query.do?';
-//    $result = drupal_http_request($verify_url . 'partner=' . $payment_method['settings']['partner'] . '&notify_id=' . $notify["notify_id"]);
-//    if ($result->data == 'true' && $sign == $notify['sign']) {
-//        return TRUE;
-//    }
-//    commerce_payment_redirect_pane_previous_page($order);
-//    return FALSE;
+    watchdog('bv_membership', 'Alipay Golbal Notification with the following data:<pre>@notify</pre>', array('@notify' => print_r($notify, TRUE)));
+    $payment_method = commerce_payment_method_instance_load('alipay_global|commerce_payment_alipay_global');
+
+    $notify = drupal_get_query_parameters($notify);
+
+    // Encrypted transaction signature.
+    $sign = commerce_alipay_global_sign($payment_method['settings']['key'], $notify);
+    // Verification is done by querying the following Alipay API URL.
+    $verify_url = extension_loaded('openssl') ? 'https://mapi.alipay.com/gateway.do?service=notify_verify&' : 'http://notify.alipay.com/trade/notify_query.do?';
+    $result = drupal_http_request($verify_url . 'partner=' . $payment_method['settings']['partner'] . '&notify_id=' . $notify["notify_id"]);
+    if ($result->data == 'true' && $sign == $notify['sign']) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 
-function bv_memeber_apply_return($form, &$form_state){
-    drupal_set_message(t('你的会员申请我们已经收到，请在<a href="/user">会员专区</a>查看你的申请状态，和会员到期日期.'));
-    ddl($_POST);
+/**
+ * Submit and process a notification feedback from Alipay for a transaction.
+ *
+ */
+function bv_membership_notify_submit($notify){
+    $user = user_load($notify['out_trade_no']);
+    if(!empty($user) && $notify['trade_status'] =='TRADE_FINISHED'){
+
+        $user->roles[5] = '5';//auto assign 会员role
+        $user->field_vip_apply_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('now'));
+        $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year'));
+        user_save($user);
+
+        db_insert('bv_memebership_transaction')
+        ->fields(array(
+            'uid' => $notify['out_trade_no'],
+            'date' => date('Y-m-d H:i:s', strtotime('now')),
+            'number' =>$notify['trade_no'],
+            'amount' =>$notify['total_fee'],
+            'currency_code' =>$notify['currency'],
+            'payment_method' => 'Alipay Global',
+            'status' => $notify['trade_status'],
+            'data' => serialize($notify),
+        ))
+        ->execute();
+    }
+}
+
+
+function bv_membership_apply_return($form, &$form_state){
+    $form = array();
+
+    if (bv_membership_return_validate($_GET)){
+        $form['message'] = array(
+            '#markup' => '<div class="message">恭喜你！你的会员申请已经成功，点击<a href="/user">会员专区</a>查看你的会员优惠!</div>'
+        );
+    } else{
+        drupal_goto('/user');
+    }
     return $form;
 }
+
+
+function bv_membership_return_validate($notify) {
+    if (empty($notify) || empty($notify['out_trade_no']) || empty($notify['trade_status'])) {
+        return FALSE;
+    }
+    // Log an entry of the notification received for a transaction.
+    watchdog('bv_membership', 'Customer returned from Alipay with the following data:<pre>@notify</pre>', array('@notify' => print_r($notify, TRUE)));
+    global $user;
+
+    if($notify['out_trade_no'] == $user->uid && $notify['trade_status'] =='TRADE_FINISHED' ){
+        return true;
+    }
+
+    return FALSE;
+}
+
+
+
 
