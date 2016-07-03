@@ -1,0 +1,69 @@
+<?php
+
+
+/**
+ * Implements hook_schema().
+ */
+function bv_membership_schema(){
+    $schema['bv_memebership_transaction'] = array(
+        'description' => 'Record memebership fee payment transaction.',
+        'fields' => array(
+            'tid' => array(
+                'description' => 'The primary identifier for a transaction.',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'uid' => array(
+                'description' => 'The user id for a transaction',
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'date' => array(
+                'description' => 'The date for a transaction',
+                'type' => 'varchar',
+                'mysql_type' => 'datetime',
+            ),
+            'number' => array(
+                'description' => 'The number for a transaction',
+                'type' => 'varchar',
+                 'length' => 255,
+              ),
+            'amount' => array(
+                'description' => 'The amount for a transaction',
+                 'type' => 'numeric',
+                 'size' => 'normal',
+                'not null' => TRUE,
+                'default' => 0,
+                'precision' => 10,
+                'scale' => 2
+            ),
+            'currency_code' => array(
+                'description' => 'The currency code for a transaction',
+                'type' => 'varchar',
+                'length' => 5,
+            ),
+            'payment_method' => array(
+                'description' => 'The payment method for a transaction',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'status' => array(
+                'description' => 'The status for a transaction',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'data' => array(
+                'type' => 'blob',
+                'not null' => FALSE,
+                'size' => 'big',
+                'serialize' => TRUE,
+                'description' => 'A serialized array of additional data.',
+            ),
+        ),
+        'primary key' => array('tid'),
+    );
+
+    return $schema;
+}
