@@ -4,8 +4,8 @@ function bv_membership_member_apply_page($form, &$form_state){
     global $base_url,$user;;
 
     $form = array();
-
-    if(!in_array('会员', $user->roles) ){//first apply membership 
+    
+    if(!in_array('会员', $user->roles) ){//first apply membership
         $form['#attached']['js'] = array(
             drupal_get_path('module', 'bv_membership') . '/js/jquery.cityselect.js',
         );
@@ -129,7 +129,7 @@ function bv_membership_member_apply_form_submit($form, &$formstate){
 
     //如果还没有找到相应上家，根据输入的区级地址匹配默认上家
     if(!$hasParentUser){
-        $stores = _bv_membership_users_by_role('加盟店');
+        $stores = bv_membership_users_by_role('加盟店');
         if(!empty($formstate['values']['townh'])){
             foreach ( $stores as $store) {
                 if(!empty($store->field_user_town)){
@@ -213,18 +213,5 @@ function _bv_membership_get_user_by_phone($phone){
     return  $uids;
 }
 
-/**
- * get all user by role name
- * @param $role_name
- * @return mixed
- */
-function _bv_membership_users_by_role($role_name) {
-    $role = user_role_load_by_name($role_name);
-    $uids = db_select('users_roles', 'ur')
-        ->fields('ur', array('uid'))
-        ->condition('ur.rid', $role->rid, '=')
-        ->execute()
-        ->fetchCol();
-    $users = user_load_multiple($uids);
-    return $users;
-}
+
+

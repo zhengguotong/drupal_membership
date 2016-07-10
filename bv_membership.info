@@ -3,6 +3,9 @@ description = member subscription with Alipay Global payment
 core = 7.x
 
 dependencies[] = commerce_vip_points
+dependencies[] = elysia_cron
+dependencies[] = commerce_alipay_global
 
 files[] = bv_membership.apply.inc
 files[] = bv_membership.payment.inc
+

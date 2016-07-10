@@ -184,17 +184,20 @@ function bv_membership_notify_submit($notify){
     if(!empty($user) && $notify['trade_status'] =='TRADE_FINISHED'){
 
         $user->roles[5] = '5';//auto assign 会员role
+        if ( !empty($user->roles[8])){
+            unset($user->roles[8]);
+        }
         $user->field_vip_apply_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('now'));
         if(empty( $user->field_vip_expired_date)){
-            $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year'));
+            $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s',strtotime('+1 year',strtotime('yesterday') ));
         }else{
             $today = date("Y-m-d H:i:s");
             $current_expired_date = $user->field_vip_expired_date['und']['0']['value'];
             if($current_expired_date <= $today){
-                $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year'));
+                $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year',strtotime('yesterday')));
             }
             else{
-                $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year',strtotime($current_expired_date)));
+                $user->field_vip_expired_date['und']['0']['value'] =  date('Y-m-d H:i:s', strtotime('+1 year',strtotime('-1 day',strtotime($current_expired_date))));
             }
         }
         user_save($user);
@@ -243,3 +246,67 @@ function bv_membership_return_validate($notify) {
 
     return FALSE;
 }
+
+/**
+ * create a cron job to update user role to Execute job at 4:00 of every day
+ *
+ * @param $op
+ * @param null $job
+ * @return mixed
+ */
+function bv_membership_cronapi($op, $job = NULL){
+    $items['bv_membership_update_user_role'] = array(
+        'description' => 'Update user roles',
+        'rule' => '0 4 * * 0-6', //Execute job at 4:00 of every day
+    );
+    return $items;
+}
+
+function bv_membership_update_user_role(){
+    watchdog('bv_membership','start update user role',null,WATCHDOG_INFO);
+    _bv_membership_deassign_vip_role();
+    watchdog('bv_membership','finished update user role',null,WATCHDOG_INFO);
+}
+
+
+/**
+ * de assign vip role if vip expired date is reached
+ */
+function _bv_membership_deassign_vip_role(){
+    $users = bv_membership_users_by_role('会员');
+
+    foreach ($users as $user) {
+        if(!in_array('加盟店',$user->roles)){//do not need to update 加盟店 user's role
+            if(empty($user->field_vip_expired_date)){//
+                unset($user->roles[5]);
+                $user->roles[8] = '8';
+                user_save($user);
+            }else{
+                $today = date("Y-m-d H:i:s");
+                $current_expired_date = $user->field_vip_expired_date['und']['0']['value'];
+                if($current_expired_date < $today){
+                    unset($user->roles[5]);
+                    $user->roles[8] = '8';
+                    user_save($user);
+                }
+            }
+       }
+    }
+}
+
+/**
+ * get all user by role name
+ * @param $role_name
+ * @return mixed
+ */
+function bv_membership_users_by_role($role_name) {
+    $role = user_role_load_by_name($role_name);
+    $uids = db_select('users_roles', 'ur')
+        ->fields('ur', array('uid'))
+        ->condition('ur.rid', $role->rid, '=')
+        ->execute()
+        ->fetchCol();
+    $users = user_load_multiple($uids);
+    return $users;
+}
+
